@@ -10,7 +10,7 @@ const validateInput = (msg) => {
 const formatMenu = (menu) => {
   return (
     'Menu:\n' +
-    menu.map((item) => `${item.id}. ${item.name} - $${item.price}`).join('\n')
+    menu.map((item) => `${item.id}. ${item.name} - ₦${item.price}`).join('\n')
   )
 }
 
@@ -19,8 +19,8 @@ const formatOrder = (order) => {
   const total = order.reduce((sum, item) => sum + item.price, 0)
   return (
     'Current Order:\n' +
-    order.map((item) => `${item.name} - $${item.price}`).join('\n') +
-    `\nTotal: $${total}`
+    order.map((item) => `${item.name} - ₦${item.price}`).join('\n') +
+    `\nTotal: ₦${total}`
   )
 }
 
@@ -33,7 +33,7 @@ const formatOrderHistory = (history) => {
         const total = order.items.reduce((sum, item) => sum + item.price, 0)
         return `#${i + 1}: ${order.items
           .map((item) => item.name)
-          .join(', ')} - Total: $${total}`
+          .join(', ')} - Total: ₦${total}`
       })
       .join('\n')
   )
@@ -44,8 +44,8 @@ const formatReceipt = (order, reference) => {
   return `
 ✅ Payment Successful!
 📝 Order Receipt:
-${order.items.map((item) => `${item.name} - $${item.price}`).join('\n')}
-💰 Total: $${total}
+${order.items.map((item) => `${item.name} - ₦${item.price}`).join('\n')}
+💰 Total: ₦${total}
 📋 Reference: ${reference}
 ⏰ Time: ${new Date().toLocaleString()}
 `

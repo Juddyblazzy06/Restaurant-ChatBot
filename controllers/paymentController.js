@@ -58,25 +58,112 @@ const paymentCallback = async (req, res) => {
 
     if (response.data.data.status === 'success') {
       // Update order status
-      req.session.orderHistory.push({
+      const order = {
         items: [...req.session.currentOrder],
         paymentStatus: 'completed',
         paymentReference: reference,
         timestamp: new Date(),
-      })
+      }
+      req.session.orderHistory.push(order)
       req.session.currentOrder = []
 
-      res.json({
-        message: 'Payment successful! Return to chat.',
-        order: req.session.orderHistory[req.session.orderHistory.length - 1], 
-      })
-  
+      // Format receipt HTML
+      const receiptHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Payment Successful</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+              }
+              .receipt-container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+              }
+              .receipt-header {
+                text-align: center;
+                color: #4CAF50;
+                margin-bottom: 20px;
+              }
+              .receipt-item {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #eee;
+              }
+              .receipt-total {
+                font-weight: bold;
+                margin-top: 20px;
+                padding-top: 10px;
+                border-top: 2px solid #4CAF50;
+              }
+              .receipt-footer {
+                margin-top: 20px;
+                text-align: center;
+                color: #666;
+              }
+              .button {
+                display: inline-block;
+                padding: 10px 20px;
+                background: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="receipt-container">
+              <div class="receipt-header">
+                <h1>✅ Payment Successful!</h1>
+              </div>
+              <div class="receipt-items">
+                ${order.items
+                  .map(
+                    (item) => `
+                  <div class="receipt-item">
+                    <span>${item.name}</span>
+                    <span>₦${item.price}</span>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+              <div class="receipt-total">
+                <span>Total</span>
+                <span>₦${order.items.reduce(
+                  (sum, item) => sum + item.price,
+                  0
+                )}</span>
+              </div>
+              <div class="receipt-footer">
+                <p>Reference: ${reference}</p>
+                <p>Time: ${new Date().toLocaleString()}</p>
+                <a href="/" class="button">Return to Chat</a>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+
+      // Send HTML response
+      res.send(receiptHtml)
     } else {
-      res.json({ message: 'Payment verification failed.' })
+      res.redirect('/?status=failed')
     }
   } catch (error) {
     console.error('Payment Verification Error:', error)
-    res.status(500).json({ message: 'Payment verification failed.' })
+    res.redirect('/?status=error')
   }
 }
 

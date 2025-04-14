@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatBox = document.getElementById('chat-box')
 
   if (paymentStatus === 'success' && paymentReference) {
+    // Clear URL parameters
+    window.history.replaceState({}, document.title, window.location.pathname)
+
     // Show payment success message
     fetch('/api/chat', {
       method: 'POST',
@@ -40,6 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
           `
         }
       })
+  } else if (paymentStatus === 'failed') {
+    chatBox.innerHTML = `
+      <div class="bot-message message">
+        <p>⚠️ Payment failed. Please try again.</p>
+        <p>Type 1 to place another order or 98 to view order history.</p>
+      </div>
+    `
+  } else if (paymentStatus === 'error') {
+    chatBox.innerHTML = `
+      <div class="bot-message message">
+        <p>⚠️ An error occurred during payment. Please try again.</p>
+        <p>Type 1 to place another order or 98 to view order history.</p>
+      </div>
+    `
   } else {
     // Show initial options
     chatBox.innerHTML = `
