@@ -1,13 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const { handleMessage } = require('../controllers/botController')
-const {
-  processPayment,
-  paymentCallback,
-} = require('../controllers/paymentController')
+const botController = require('../controllers/botController')
+const paymentController = require('../controllers/paymentController')
 
-router.post('/', handleMessage)
-router.post('/pay', processPayment)
-router.get('/payment/callback', paymentCallback)
+router.post('/', botController.handleMessage)
+router.get('/payment/callback', paymentController.paymentCallback)
 
 module.exports = router

@@ -39,7 +39,19 @@ const formatOrderHistory = (history) => {
   )
 }
 
-const handleMessage = async (req, res) => {
+const formatReceipt = (order, reference) => {
+  const total = order.items.reduce((sum, item) => sum + item.price, 0)
+  return `
+✅ Payment Successful!
+📝 Order Receipt:
+${order.items.map((item) => `${item.name} - $${item.price}`).join('\n')}
+💰 Total: $${total}
+📋 Reference: ${reference}
+⏰ Time: ${new Date().toLocaleString()}
+`
+}
+
+exports.handleMessage = async (req, res) => {
   const session = req.session
   const msg = req.body.message?.trim()
 
@@ -50,10 +62,28 @@ const handleMessage = async (req, res) => {
   const choice = validateInput(msg)
   let reply = ''
   let paymentUrl = null
+  let showMenu = false
+  let isPaymentSuccess = false
+  let paymentReference = null
+
+  // Check if this is a payment success callback
+  if (req.query.status === 'success' && req.query.reference) {
+    isPaymentSuccess = true
+    paymentReference = req.query.reference
+    const lastOrder = session.orderHistory[session.orderHistory.length - 1]
+    if (lastOrder) {
+      reply = formatReceipt(lastOrder, paymentReference)
+      return res.json({
+        message: reply,
+        isPaymentSuccess,
+      })
+    }
+  }
 
   switch (msg) {
     case '1':
-      reply = formatMenu(getMenu())
+      showMenu = true
+      reply = 'Please select an item from the menu by entering its number:'
       break
 
     case '99':
@@ -112,7 +142,10 @@ const handleMessage = async (req, res) => {
       }
   }
 
-  res.json({ message: reply, paymentUrl })
+  res.json({
+    message: reply,
+    paymentUrl,
+    showMenu: showMenu ? formatMenu(getMenu()) : null,
+    isPaymentSuccess,
+  })
 }
-
-module.exports = { handleMessage }

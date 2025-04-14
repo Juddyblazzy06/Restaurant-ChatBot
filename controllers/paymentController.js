@@ -21,7 +21,7 @@ const processPayment = async (req, res) => {
       'https://api.paystack.co/transaction/initialize',
       {
         amount: orderTotal * 100,
-        email: 'customer@example.com',
+        email: 'amienjude@gmail.com',
         callback_url: `${req.protocol}://${req.get(
           'host'
         )}/api/chat/payment/callback`,
@@ -68,8 +68,9 @@ const paymentCallback = async (req, res) => {
 
       res.json({
         message: 'Payment successful! Return to chat.',
-        order: req.session.orderHistory[req.session.orderHistory.length - 1],
+        order: req.session.orderHistory[req.session.orderHistory.length - 1], 
       })
+  
     } else {
       res.json({ message: 'Payment verification failed.' })
     }

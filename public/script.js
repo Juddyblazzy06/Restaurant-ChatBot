@@ -8,22 +8,54 @@ const initialOptions = `
 0 - Cancel Order
 `
 
+// Check for payment callback
+const urlParams = new URLSearchParams(window.location.search)
+const paymentStatus = urlParams.get('status')
+const paymentReference = urlParams.get('reference')
+
 // Display initial options when page loads
 document.addEventListener('DOMContentLoaded', () => {
   const chatBox = document.getElementById('chat-box')
-  chatBox.innerHTML = `
-    <div class="welcome-message">
-      <p>Welcome to our Restaurant ChatBot!</p>
-    </div>
-    <div class="bot-message message">
-      <div class="options-list">
-        ${initialOptions
-          .split('\n')
-          .map((line) => `<p>${line}</p>`)
-          .join('')}
+
+  if (paymentStatus === 'success' && paymentReference) {
+    // Show payment success message
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '' }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.isPaymentSuccess) {
+          chatBox.innerHTML = `
+            <div class="bot-message message">
+              <div class="receipt">
+                ${data.message
+                  .split('\n')
+                  .map((line) => `<p>${line}</p>`)
+                  .join('')}
+              </div>
+              <p>Type 1 to place another order or 98 to view order history.</p>
+            </div>
+          `
+        }
+      })
+  } else {
+    // Show initial options
+    chatBox.innerHTML = `
+      <div class="welcome-message">
+        <p>Welcome to our Restaurant ChatBot!</p>
       </div>
-    </div>
-  `
+      <div class="bot-message message">
+        <div class="options-list">
+          ${initialOptions
+            .split('\n')
+            .map((line) => `<p>${line}</p>`)
+            .join('')}
+        </div>
+      </div>
+    `
+  }
   chatBox.scrollTop = chatBox.scrollHeight
 })
 
@@ -62,6 +94,20 @@ function sendMessage() {
           <p>${data.message.replace(/\n/g, '<br>')}</p>
         </div>
       `
+
+      // If menu should be shown, display it
+      if (data.showMenu) {
+        chatBox.innerHTML += `
+          <div class="bot-message message">
+            <div class="options-list">
+              ${data.showMenu
+                .split('\n')
+                .map((line) => `<p>${line}</p>`)
+                .join('')}
+            </div>
+          </div>
+        `
+      }
 
       // If payment is required, show payment button
       if (data.paymentUrl) {
