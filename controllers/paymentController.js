@@ -1,6 +1,5 @@
 const axios = require('axios')
 require('dotenv').config()
-
 const processPayment = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
   if (!PAYSTACK_SECRET_KEY) {
@@ -155,7 +154,6 @@ const paymentCallback = async (req, res) => {
           </body>
         </html>
       `
-
       // Send HTML response
       res.send(receiptHtml)
     } else {
