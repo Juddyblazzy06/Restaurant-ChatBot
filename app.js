@@ -4,7 +4,7 @@ const botRoutes = require('./routes/botRoutes');
 const sessionMiddleware = require('./config/session');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 6000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
