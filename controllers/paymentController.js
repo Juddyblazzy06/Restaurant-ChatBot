@@ -1,28 +1,82 @@
-const axios = require("axios");
+const axios = require('axios')
+require('dotenv').config()
 
-exports.processPayment = async (req, res) => {
-  const PAYSTACK_SECRET_KEY = "sk_test_..."; // Replace with your key
-  const orderTotal = req.session.order.getCurrentOrder().reduce((sum, item) => sum + item.price, 0);
-  
+const processPayment = async (req, res) => {
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ message: 'Payment configuration error' })
+  }
+
+  const orderTotal = req.session.currentOrder.reduce(
+    (sum, item) => sum + item.price,
+    0
+  )
+
+  if (orderTotal <= 0) {
+    return res.status(400).json({ message: 'No items in order' })
+  }
+
   try {
     const response = await axios.post(
-      "https://api.paystack.co/transaction/initialize",
+      'https://api.paystack.co/transaction/initialize',
       {
         amount: orderTotal * 100,
-        email: "customer@example.com",
+        email: 'customer@example.com',
+        callback_url: `${req.protocol}://${req.get(
+          'host'
+        )}/api/chat/payment/callback`,
       },
-      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
-    );
-    res.redirect(response.data.data.authorization_url);
+      {
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+    res.json({
+      status: 'success',
+      data: response.data.data,
+    })
   } catch (error) {
-    res.status(500).json({ message: "Payment failed" });
+    console.error('Payment Error:', error.response?.data || error.message)
+    res.status(500).json({
+      message: 'Payment failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    })
   }
-};
+}
 
-exports.paymentCallback = (req, res) => {
-  if (req.query.trxref === "success") {
-    res.json({ message: "Payment successful! Return to chat." });
-  } else {
-    res.json({ message: "Payment failed." });
+const paymentCallback = async (req, res) => {
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
+  const reference = req.query.reference
+
+  try {
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+    )
+
+    if (response.data.data.status === 'success') {
+      // Update order status
+      req.session.orderHistory.push({
+        items: [...req.session.currentOrder],
+        paymentStatus: 'completed',
+        paymentReference: reference,
+        timestamp: new Date(),
+      })
+      req.session.currentOrder = []
+
+      res.json({
+        message: 'Payment successful! Return to chat.',
+        order: req.session.orderHistory[req.session.orderHistory.length - 1],
+      })
+    } else {
+      res.json({ message: 'Payment verification failed.' })
+    }
+  } catch (error) {
+    console.error('Payment Verification Error:', error)
+    res.status(500).json({ message: 'Payment verification failed.' })
   }
-};
+}
+
+module.exports = { processPayment, paymentCallback }
