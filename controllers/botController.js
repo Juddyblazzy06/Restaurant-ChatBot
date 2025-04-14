@@ -1,5 +1,6 @@
 const { getMenu, findMenuItemById } = require('../models/Menu')
 const { addToOrder, placeOrder, cancelOrder } = require('../models/Order')
+const { processPayment } = require('./paymentController')
 
 const validateInput = (msg) => {
   const choice = parseInt(msg)
@@ -38,7 +39,7 @@ const formatOrderHistory = (history) => {
   )
 }
 
-const handleMessage = (req, res) => {
+const handleMessage = async (req, res) => {
   const session = req.session
   const msg = req.body.message?.trim()
 
@@ -48,6 +49,7 @@ const handleMessage = (req, res) => {
 
   const choice = validateInput(msg)
   let reply = ''
+  let paymentUrl = null
 
   switch (msg) {
     case '1':
@@ -56,11 +58,17 @@ const handleMessage = (req, res) => {
 
     case '99':
       if (session.currentOrder && session.currentOrder.length > 0) {
-        if (placeOrder(session)) {
-          reply =
-            '✅ Order placed successfully!\nType 1 to place another order.'
-        } else {
-          reply = '⚠️ Failed to place order. Please try again.'
+        try {
+          const paymentResponse = await processPayment(req, res)
+          if (paymentResponse && paymentResponse.data) {
+            paymentUrl = paymentResponse.data.authorization_url
+            reply =
+              '✅ Order placed successfully! Click the payment button to proceed.'
+          } else {
+            reply = '⚠️ Failed to process payment. Please try again.'
+          }
+        } catch (error) {
+          reply = '⚠️ Payment processing failed. Please try again.'
         }
       } else {
         reply = '⚠️ No current order to place.'
@@ -89,9 +97,13 @@ const handleMessage = (req, res) => {
         const menuItem = findMenuItemById(choice)
         if (menuItem) {
           addToOrder(session, menuItem)
+          const orderTotal = session.currentOrder.reduce(
+            (sum, item) => sum + item.price,
+            0
+          )
           reply = `✅ ${menuItem.name} added to your order.\n${formatOrder(
             session.currentOrder
-          )}`
+          )}\n\nType 99 to checkout or continue adding items.`
         } else {
           reply = '⚠️ Invalid menu item. Please select a valid option.'
         }
@@ -100,7 +112,7 @@ const handleMessage = (req, res) => {
       }
   }
 
-  res.json({ message: reply })
+  res.json({ message: reply, paymentUrl })
 }
 
 module.exports = { handleMessage }

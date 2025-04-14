@@ -4,7 +4,7 @@ require('dotenv').config()
 const processPayment = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
   if (!PAYSTACK_SECRET_KEY) {
-    return res.status(500).json({ message: 'Payment configuration error' })
+    throw new Error('Payment configuration error')
   }
 
   const orderTotal = req.session.currentOrder.reduce(
@@ -13,7 +13,7 @@ const processPayment = async (req, res) => {
   )
 
   if (orderTotal <= 0) {
-    return res.status(400).json({ message: 'No items in order' })
+    throw new Error('No items in order')
   }
 
   try {
@@ -25,6 +25,12 @@ const processPayment = async (req, res) => {
         callback_url: `${req.protocol}://${req.get(
           'host'
         )}/api/chat/payment/callback`,
+        metadata: {
+          order_items: req.session.currentOrder.map((item) => ({
+            name: item.name,
+            price: item.price,
+          })),
+        },
       },
       {
         headers: {
@@ -33,16 +39,10 @@ const processPayment = async (req, res) => {
         },
       }
     )
-    res.json({
-      status: 'success',
-      data: response.data.data,
-    })
+    return response.data
   } catch (error) {
     console.error('Payment Error:', error.response?.data || error.message)
-    res.status(500).json({
-      message: 'Payment failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    })
+    throw error
   }
 }
 
