@@ -130,7 +130,7 @@ function sendMessage() {
       if (data.paymentUrl) {
         chatBox.innerHTML += `
           <div class="bot-message message">
-            <p>Click below to proceed with payment:</p>
+            <p>Click the button below to proceed with payment:</p>
             <button onclick="window.open('${data.paymentUrl}', '_blank')">Pay Now</button>
           </div>
         `

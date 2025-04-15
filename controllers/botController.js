@@ -93,7 +93,7 @@ exports.handleMessage = async (req, res) => {
           if (paymentResponse && paymentResponse.data) {
             paymentUrl = paymentResponse.data.authorization_url
             reply =
-              '✅ Order placed successfully! Click the payment button to proceed.'
+              '✅ Order placed successfully! Proceed with payment.'
           } else {
             reply = '⚠️ Failed to process payment. Please try again.'
           }
